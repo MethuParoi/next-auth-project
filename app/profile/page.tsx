@@ -1,7 +1,36 @@
+import getUserData from "@/actions/getUserData";
+import getUserImage from "@/actions/getUserImage";
+import updateUserSkill from "@/actions/updateUserSkill";
 import { Button } from "@/components/ui/button";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 const Profile = async () => {
-  const handleAddSkill = async (formData: FormData) => {};
+  const userData = await getUserData();
+
+  //Protecting route
+  if (!userData) {
+    return redirect("/");
+  }
+
+  const userLogo = await getUserImage(userData?.logo!);
+
+  const handleAddSkill = async (formData: FormData) => {
+    "use server";
+
+    const skill = formData.get("skill");
+
+    if (!skill) {
+      return;
+    }
+
+    const [formResponse, formError] = await updateUserSkill(
+      userData?.id!,
+      skill as string
+    );
+
+    revalidatePath("/profile");
+  };
 
   return (
     <div className="bg-gray-100 min-h-screen">
@@ -11,12 +40,12 @@ const Profile = async () => {
             <div className="bg-white shadow rounded-lg p-6">
               <div className="flex flex-col items-center">
                 <img
-                  src={""}
+                  src={userLogo}
                   className="w-32 h-32 bg-gray-300 object-cover rounded-full mb-4 shrink-0"
                   alt={""}
                 />
-                <h1 className="text-xl font-bold">{""}</h1>
-                <p className="text-gray-700">{""}</p>
+                <h1 className="text-xl font-bold">{userData?.full_name}</h1>
+                <p className="text-gray-700">{userData?.job_title}</p>
                 <div className="mt-6 flex flex-wrap gap-4 justify-center">
                   <a
                     href="#"
@@ -34,7 +63,7 @@ const Profile = async () => {
               </div>
               <hr className="my-6 border-t border-gray-300" />
               <div className="flex flex-col">
-                <form className="flex">
+                <form action={handleAddSkill} className="flex">
                   <input
                     className="border mr-2 rounded-md border-black px-3 py-2"
                     type="text"
@@ -43,15 +72,15 @@ const Profile = async () => {
                   />
                   <Button type="submit">Add</Button>
                 </form>
-                <span className="text-gray-700 uppercase font-bold tracking-wider mb-2">
+                <p className="text-gray-700 uppercase font-bold text-2xl tracking-wider mb-2">
                   Skills
-                </span>
+                </p>
                 <ul>
-                  <li className="mb-2">JavaScript</li>
-                  <li className="mb-2">React</li>
-                  <li className="mb-2">Node.js</li>
-                  <li className="mb-2">HTML/CSS</li>
-                  <li className="mb-2">Tailwind CSS</li>
+                  {userData?.skills.map((skill) => (
+                    <li key={skill} className="text-gray-700">
+                      {skill}
+                    </li>
+                  ))}
                 </ul>
               </div>
             </div>
